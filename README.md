@@ -2,7 +2,6 @@
 
 ## 1. Importe as Classes necessárias
         import br.volt.filtrosmartweb.model.FiltroSmartWeb;
-        import br.volt.filtrosmartweb.control.HTTPRequest;
 
 ## 2. Instancie um objeto de FiltroSmartWeb
 
