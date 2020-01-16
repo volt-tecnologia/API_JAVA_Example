@@ -5,18 +5,14 @@
  */
 package br.volt.filtrosmartweb.view;
 
-import br.volt.filtrosmartweb.model.*;
-import br.volt.filtrosmartweb.control.*;
+import br.volt.filtrosmartweb.model.FiltroSmartWeb;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JOptionPane;
-import org.json.*;
 
 /**
  *
@@ -53,18 +49,22 @@ FiltroSmartWeb equipamento;
         showTomada10.setBackground(cinza);
         
         updateInfo();
+
+        
     }
+    
+    
     
     private void enableComponents(boolean status){
         
         Component ether[] = panelEhernet.getComponents();
-        for(int i = 0; i < ether.length; i++){
-            ether[i].setEnabled(status);
-        }
+    for (Component ether1 : ether) {
+        ether1.setEnabled(status);
+    }
         
         ether = panelNamePort.getComponents();
-        for(int i = 0; i < ether.length; i++){
-            ether[i].setEnabled(status);
+        for(Component ether1:ether){
+            ether1.setEnabled(status);
         }
         
         userField.setEnabled(!status);
@@ -84,238 +84,144 @@ FiltroSmartWeb equipamento;
     
     private void initListeners(){
         
-        cbNomePorta.addItemListener(new ItemListener() {
-            @Override
-            public void itemStateChanged(ItemEvent e) {
-                namePortField.setText(equipamento.getAc_nome(Integer.parseInt((String)cbNomePorta.getSelectedItem())));
-            }
+        cbNomePorta.addItemListener((ItemEvent e) -> {
+            namePortField.setText(equipamento.getAc_nome(Integer.parseInt((String)cbNomePorta.getSelectedItem())));
         });
         
-        btRenamePort.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if(cbNomePorta.getSelectedIndex()>0){
-                    
-                    equipamento.controlTomada(Integer.parseInt((String)cbNomePorta.getSelectedItem()), 2, namePortField.getText());
-                    
-                    JOptionPane.showMessageDialog(null, "Alteração realizada com sucesso!!");
-                    
-                }else JOptionPane.showMessageDialog(null, "Selecione uma porta!");
-            }
-        });
-        btGetEther.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                retrieveEtherConfig();
-            }
-        });
-        
-        btSaveEthernet.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                VoltDevice vd = new VoltDevice();
+        btRenamePort.addActionListener((ActionEvent e) -> {
+            if(cbNomePorta.getSelectedIndex()>0){
                 
-                vd.setDevhost(hostname.getText());
-                vd.setDevip(ip.getText());
-                vd.setDevgtw(gateway.getText());
-                vd.setDevmask(mask.getText());
-                vd.setDevdns1(dns1.getText());
-                vd.setDevdns2(dns2.getText());
-                loop=false;
+                equipamento.controlTomada(Integer.parseInt((String)cbNomePorta.getSelectedItem()), 2, namePortField.getText());
                 
-                boolean resp = equipamento.configEthernet(vd);
-                if(resp){
-                    ipField.setText(vd.getDevip());
-                }
+                JOptionPane.showMessageDialog(null, "Alteração realizada com sucesso!!");
                 
-                btConnect.setText("Conectar");
-                //userField.setEnabled(true);
-                //passField.setEnabled(true);
-                enableComponents(false);
-            }
+            }else JOptionPane.showMessageDialog(null, "Selecione uma porta!");
+        });
+        btGetEther.addActionListener((ActionEvent e) -> {
+            retrieveEtherConfig();
         });
         
-        
-        showTomada1.addActionListener(new ActionListener() {
+        btSaveEthernet.addActionListener((ActionEvent e) -> {
+            loop=false;
             
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if(loop)
+            int resp = equipamento.configEthernet(cbDhcp.isSelected(), hostname.getText(),
+                    ip.getText(),
+                    gateway.getText(),
+                    mask.getText(),
+                    dns1.getText(),
+                    dns2.getText());
+            
+            System.out.println("Resposta: "+resp);
+            if(resp == 200){
+                ipField.setText(equipamento.getDevip());
+            }else if(resp == 401) JOptionPane.showMessageDialog(null,"Falha de autenticação na requisição");
+            
+            btConnect.setText("Conectar");
+            //userField.setEnabled(true);
+            //passField.setEnabled(true);
+            enableComponents(false);
+        });
+        
+        
+        showTomada1.addActionListener((ActionEvent e) -> {
+            if(loop)
                 controlTomada(1, 0);
-                else JOptionPane.showMessageDialog(null, "Equipamento desconectado!!");
-            }
+            else JOptionPane.showMessageDialog(null, "Equipamento desconectado!!");
         });
-        showTomada2.addActionListener(new ActionListener() {
-            
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if(loop)
+        showTomada2.addActionListener((ActionEvent e) -> {
+            if(loop)
                 controlTomada(2, 0);
-                else JOptionPane.showMessageDialog(null, "Equipamento desconectado!!");
-            }
+            else JOptionPane.showMessageDialog(null, "Equipamento desconectado!!");
         });
-        showTomada3.addActionListener(new ActionListener() {
-            
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if(loop)
+        showTomada3.addActionListener((ActionEvent e) -> {
+            if(loop)
                 controlTomada(3, 0);
-                else JOptionPane.showMessageDialog(null, "Equipamento desconectado!!");
-            }
+            else JOptionPane.showMessageDialog(null, "Equipamento desconectado!!");
         });
-        showTomada4.addActionListener(new ActionListener() {
-            
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if(loop)
+        showTomada4.addActionListener((ActionEvent e) -> {
+            if(loop)
                 controlTomada(4, 0);
-                else JOptionPane.showMessageDialog(null, "Equipamento desconectado!!");
-            }
+            else JOptionPane.showMessageDialog(null, "Equipamento desconectado!!");
         });
-        showTomada5.addActionListener(new ActionListener() {
-            
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if(loop)
+        showTomada5.addActionListener((ActionEvent e) -> {
+            if(loop)
                 controlTomada(5, 0);
-                else JOptionPane.showMessageDialog(null, "Equipamento desconectado!!");
-            }
+            else JOptionPane.showMessageDialog(null, "Equipamento desconectado!!");
         });
-        showTomada6.addActionListener(new ActionListener() {
-            
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if(loop)
+        showTomada6.addActionListener((ActionEvent e) -> {
+            if(loop)
                 controlTomada(6, 0);
-                else JOptionPane.showMessageDialog(null, "Equipamento desconectado!!");
-            }
+            else JOptionPane.showMessageDialog(null, "Equipamento desconectado!!");
         });
-        showTomada7.addActionListener(new ActionListener() {
-            
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if(loop)
+        showTomada7.addActionListener((ActionEvent e) -> {
+            if(loop)
                 controlTomada(7, 0);
-                else JOptionPane.showMessageDialog(null, "Equipamento desconectado!!");
-                
-            }
+            else JOptionPane.showMessageDialog(null, "Equipamento desconectado!!");
         });
-        showTomada8.addActionListener(new ActionListener() {
-            
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if(loop)
+        showTomada8.addActionListener((ActionEvent e) -> {
+            if(loop)
                 controlTomada(8, 0);
-                else JOptionPane.showMessageDialog(null, "Equipamento desconectado!!");
-            }
+            else JOptionPane.showMessageDialog(null, "Equipamento desconectado!!");
         });
-        showTomada9.addActionListener(new ActionListener() {
-            
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if(loop)
+        showTomada9.addActionListener((ActionEvent e) -> {
+            if(loop)
                 controlTomada(9, 0);
-                else JOptionPane.showMessageDialog(null, "Equipamento desconectado!!");
-            }
+            else JOptionPane.showMessageDialog(null, "Equipamento desconectado!!");
         });
-        showTomada10.addActionListener(new ActionListener() {
-            
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if(loop)
+        showTomada10.addActionListener((ActionEvent e) -> {
+            if(loop)
                 controlTomada(10, 0);
-                else JOptionPane.showMessageDialog(null, "Equipamento desconectado!!");
-            }
+            else JOptionPane.showMessageDialog(null, "Equipamento desconectado!!");
         });
         
         
-        sw1.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if(loop) controlTomada(1, 1);
-                else JOptionPane.showMessageDialog(null, "Equipamento desconectado!!");
-            
-            }
+        sw1.addActionListener((ActionEvent e) -> {
+            if(loop) controlTomada(1, 1);
+            else JOptionPane.showMessageDialog(null, "Equipamento desconectado!!");
         });
-        sw2.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if(loop) controlTomada(2, 1);
-                else JOptionPane.showMessageDialog(null, "Equipamento desconectado!!");
-            
-            }
+        sw2.addActionListener((ActionEvent e) -> {
+            if(loop) controlTomada(2, 1);
+            else JOptionPane.showMessageDialog(null, "Equipamento desconectado!!");
         });
         
-        sw3.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if(loop) controlTomada(3, 1);
-                else JOptionPane.showMessageDialog(null, "Equipamento desconectado!!");
-            
-            }
+        sw3.addActionListener((ActionEvent e) -> {
+            if(loop) controlTomada(3, 1);
+            else JOptionPane.showMessageDialog(null, "Equipamento desconectado!!");
         });
         
-        sw4.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if(loop) controlTomada(4, 1);
-                else JOptionPane.showMessageDialog(null, "Equipamento desconectado!!");
-            
-            }
+        sw4.addActionListener((ActionEvent e) -> {
+            if(loop) controlTomada(4, 1);
+            else JOptionPane.showMessageDialog(null, "Equipamento desconectado!!");
         });
         
-        sw5.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if(loop) controlTomada(5, 1);
-                else JOptionPane.showMessageDialog(null, "Equipamento desconectado!!");
-            
-            }
+        sw5.addActionListener((ActionEvent e) -> {
+            if(loop) controlTomada(5, 1);
+            else JOptionPane.showMessageDialog(null, "Equipamento desconectado!!");
         });
         
-        sw6.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if(loop) controlTomada(6, 1);
-                else JOptionPane.showMessageDialog(null, "Equipamento desconectado!!");
-            
-            }
+        sw6.addActionListener((ActionEvent e) -> {
+            if(loop) controlTomada(6, 1);
+            else JOptionPane.showMessageDialog(null, "Equipamento desconectado!!");
         });
         
-        sw7.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if(loop) controlTomada(7, 1);
-                else JOptionPane.showMessageDialog(null, "Equipamento desconectado!!");
-            
-            }
+        sw7.addActionListener((ActionEvent e) -> {
+            if(loop) controlTomada(7, 1);
+            else JOptionPane.showMessageDialog(null, "Equipamento desconectado!!");
         });
         
-        sw8.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if(loop) controlTomada(8, 1);
-                else JOptionPane.showMessageDialog(null, "Equipamento desconectado!!");
-            
-            }
+        sw8.addActionListener((ActionEvent e) -> {
+            if(loop) controlTomada(8, 1);
+            else JOptionPane.showMessageDialog(null, "Equipamento desconectado!!");
         });
         
-        sw9.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if(loop) controlTomada(9, 1);
-                else JOptionPane.showMessageDialog(null, "Equipamento desconectado!!");
-            
-            }
+        sw9.addActionListener((ActionEvent e) -> {
+            if(loop) controlTomada(9, 1);
+            else JOptionPane.showMessageDialog(null, "Equipamento desconectado!!");
         });
         
-        sw10.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if(loop) controlTomada(10, 1);
-                else JOptionPane.showMessageDialog(null, "Equipamento desconectado!!");
-            
-            }
+        sw10.addActionListener((ActionEvent e) -> {
+            if(loop) controlTomada(10, 1);
+            else JOptionPane.showMessageDialog(null, "Equipamento desconectado!!");
         });
         
         
@@ -696,100 +602,99 @@ FiltroSmartWeb equipamento;
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addGap(20, 20, 20)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(showTomada1)
-                    .addComponent(nome1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(sw1))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(sw2)
-                    .addComponent(showTomada2)
-                    .addComponent(nome2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(sw3)
-                    .addComponent(showTomada3)
-                    .addComponent(nome3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(showTomada4)
-                    .addComponent(nome4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(sw4))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(showTomada5)
-                    .addComponent(nome5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(sw5))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(showTomada6)
-                    .addComponent(nome6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(sw6))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(showTomada7)
-                    .addComponent(nome7, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(sw7))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(showTomada8)
-                    .addComponent(nome8, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(sw8))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(showTomada9)
-                    .addComponent(nome9, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(sw9))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(showTomada10)
-                    .addComponent(nome10, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(sw10))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-            .addGroup(layout.createSequentialGroup()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
-                        .addGap(21, 21, 21)
+                        .addGap(20, 20, 20)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jLabel1)
-                            .addComponent(jLabel6))
-                        .addGap(2, 2, 2)
+                            .addComponent(showTomada1)
+                            .addComponent(nome1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(sw1))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(sw2)
+                            .addComponent(showTomada2)
+                            .addComponent(nome2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(sw3)
+                            .addComponent(showTomada3)
+                            .addComponent(nome3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(showTomada4)
+                            .addComponent(nome4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(sw4))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(showTomada5)
+                            .addComponent(nome5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(sw5))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(showTomada6)
+                            .addComponent(nome6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(sw6))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(showTomada7)
+                            .addComponent(nome7, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(sw7))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(showTomada8)
+                            .addComponent(nome8, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(sw8))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(showTomada9)
+                            .addComponent(nome9, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(sw9))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(showTomada10)
+                            .addComponent(nome10, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(sw10)))
+                    .addGroup(layout.createSequentialGroup()
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(layout.createSequentialGroup()
-                                .addComponent(userField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addGap(21, 21, 21)
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(jLabel1)
+                                    .addComponent(jLabel6))
+                                .addGap(2, 2, 2)
                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                     .addGroup(layout.createSequentialGroup()
-                                        .addGap(48, 48, 48)
-                                        .addComponent(passField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                    .addComponent(jLabel2))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                .addComponent(btConnect))
-                            .addComponent(ipField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                    .addGroup(layout.createSequentialGroup()
-                        .addGap(37, 37, 37)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                        .addComponent(userField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                            .addGroup(layout.createSequentialGroup()
+                                                .addGap(48, 48, 48)
+                                                .addComponent(passField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                            .addComponent(jLabel2))
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                        .addComponent(btConnect))
+                                    .addComponent(ipField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
                             .addGroup(layout.createSequentialGroup()
-                                .addComponent(jLabel5)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                .addComponent(dataHoraField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                                .addGroup(layout.createSequentialGroup()
-                                    .addComponent(jLabel3)
-                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(uptimeField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
-                                    .addComponent(jLabel4)
-                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                    .addComponent(tempfield, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
-                .addGap(204, 204, 204)
-                .addComponent(panelNamePort, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(panelEhernet, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(45, 45, 45))
+                                .addGap(37, 37, 37)
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addGroup(layout.createSequentialGroup()
+                                        .addComponent(jLabel5)
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                        .addComponent(dataHoraField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                                        .addGroup(layout.createSequentialGroup()
+                                            .addComponent(jLabel3)
+                                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                            .addComponent(uptimeField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                        .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
+                                            .addComponent(jLabel4)
+                                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                            .addComponent(tempfield, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))))))
+                        .addGap(204, 204, 204)
+                        .addComponent(panelNamePort, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(panelEhernet, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addContainerGap(59, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -869,10 +774,11 @@ FiltroSmartWeb equipamento;
         int resp = equipamento.HTTPGETEquipInfo();
         
         
+        
         if(resp == 200){
             
             if(!loop){ 
-                System.out.println(resp);
+                //System.out.println(resp);
                 System.out.println("logado!!");
                 //userField.setEnabled(false);
                 //passField.setEnabled(false);
@@ -905,77 +811,73 @@ FiltroSmartWeb equipamento;
     }//GEN-LAST:event_btConnectActionPerformed
 
     private void loopInfo(){
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-
-                while(loop){
-                    equipamento.HTTPGETEquipInfo();
-                    //System.out.println(jo);
-                    showTomada1.setBackground(equipamento.getAc(1) == 2?cinza:equipamento.getAc(1) == 1 ? verde:vermelho);
-                    showTomada2.setBackground(equipamento.getAc(2) == 2?cinza:equipamento.getAc(2) == 1 ? verde:vermelho);
-                    showTomada3.setBackground(equipamento.getAc(3) == 2?cinza:equipamento.getAc(3) == 1 ? verde:vermelho);
-                    showTomada4.setBackground(equipamento.getAc(4) == 2?cinza:equipamento.getAc(4) == 1 ? verde:vermelho);
-                    showTomada5.setBackground(equipamento.getAc(5) == 2?cinza:equipamento.getAc(5) == 1 ? verde:vermelho);
-                    showTomada6.setBackground(equipamento.getAc(6) == 2?cinza:equipamento.getAc(6) == 1 ? verde:vermelho);
-                    showTomada7.setBackground(equipamento.getAc(7) == 2?cinza:equipamento.getAc(7) == 1 ? verde:vermelho);
-                    showTomada8.setBackground(equipamento.getAc(8) == 2?cinza:equipamento.getAc(8) == 1 ? verde:vermelho);
-                    showTomada9.setBackground(equipamento.getAc(9) == 2?cinza:equipamento.getAc(9) == 1 ? verde:vermelho);
-                    showTomada10.setBackground(equipamento.getAc(10) == 2?cinza:equipamento.getAc(10) == 1 ? verde:vermelho);
-                                        
-                    sw1.setText(equipamento.getAc(1) == 2?"DESABILITADA":"HABILITADA");
-                    sw1.setSelected(equipamento.getAc(1) != 2?true:false);
-                    nome1.setText(equipamento.getAc_nome(1));
-                    
-                   
-                    
-                    sw2.setText(equipamento.getAc(2) == 2?"DESABILITADA":"HABILITADA");
-                    sw2.setSelected(equipamento.getAc(2) != 2?true:false);
-                    nome2.setText(equipamento.getAc_nome(2));
-                    
-                    sw3.setText(equipamento.getAc(3) == 2?"DESABILITADA":"HABILITADA");
-                    sw3.setSelected(equipamento.getAc(3) != 2?true:false);
-                    nome3.setText(equipamento.getAc_nome(3));
-
-                    sw4.setText(equipamento.getAc(4) == 2?"DESABILITADA":"HABILITADA");
-                    sw4.setSelected(equipamento.getAc(4) != 2?true:false);
-                    nome4.setText(equipamento.getAc_nome(4));
-                    
-                    sw5.setText(equipamento.getAc(5) == 2?"DESABILITADA":"HABILITADA");
-                    sw5.setSelected(equipamento.getAc(5) != 2?true:false);
-                    nome5.setText(equipamento.getAc_nome(5));
-                    
-                    sw6.setText(equipamento.getAc(6) == 2?"DESABILITADA":"HABILITADA");
-                    sw6.setSelected(equipamento.getAc(6) != 2?true:false);
-                    nome6.setText(equipamento.getAc_nome(6));
-                    
-                    sw7.setText(equipamento.getAc(7) == 2?"DESABILITADA":"HABILITADA");
-                    sw7.setSelected(equipamento.getAc(7) != 2?true:false);
-                    nome7.setText(equipamento.getAc_nome(7));
-                    
-                    sw8.setText(equipamento.getAc(8) == 2?"DESABILITADA":"HABILITADA");
-                    sw8.setSelected(equipamento.getAc(8) != 2?true:false);
-                    nome8.setText(equipamento.getAc_nome(8));
-                    
-                    sw9.setText(equipamento.getAc(9) == 2?"DESABILITADA":"HABILITADA");
-                    sw9.setSelected(equipamento.getAc(9) != 2?true:false);
-                    nome9.setText(equipamento.getAc_nome(9));
-                    
-                    sw10.setText(equipamento.getAc(10) == 2?"DESABILITADA":"HABILITADA");
-                    sw10.setSelected(equipamento.getAc(10) != 2?true:false);
-                    nome10.setText(equipamento.getAc_nome(10));
-                    
-                    uptimeField.setText(equipamento.getUptime());
-                    tempfield.setText(equipamento.getTemp()+ " ºC");
-                    
-                    dataHoraField.setText(equipamento.getDate()+" - "+equipamento.getTime());
-                    try {
-                        Thread.sleep(2000);
-                    } catch (InterruptedException ex) {
-                        Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
-                    }
-                    
-                }  
+        new Thread(() -> {
+            while(loop){
+                equipamento.HTTPGETEquipInfo();
+                //System.out.println(jo);
+                showTomada1.setBackground(equipamento.getAc(1) == 2?cinza:equipamento.getAc(1) == 1 ? verde:vermelho);
+                showTomada2.setBackground(equipamento.getAc(2) == 2?cinza:equipamento.getAc(2) == 1 ? verde:vermelho);
+                showTomada3.setBackground(equipamento.getAc(3) == 2?cinza:equipamento.getAc(3) == 1 ? verde:vermelho);
+                showTomada4.setBackground(equipamento.getAc(4) == 2?cinza:equipamento.getAc(4) == 1 ? verde:vermelho);
+                showTomada5.setBackground(equipamento.getAc(5) == 2?cinza:equipamento.getAc(5) == 1 ? verde:vermelho);
+                showTomada6.setBackground(equipamento.getAc(6) == 2?cinza:equipamento.getAc(6) == 1 ? verde:vermelho);
+                showTomada7.setBackground(equipamento.getAc(7) == 2?cinza:equipamento.getAc(7) == 1 ? verde:vermelho);
+                showTomada8.setBackground(equipamento.getAc(8) == 2?cinza:equipamento.getAc(8) == 1 ? verde:vermelho);
+                showTomada9.setBackground(equipamento.getAc(9) == 2?cinza:equipamento.getAc(9) == 1 ? verde:vermelho);
+                showTomada10.setBackground(equipamento.getAc(10) == 2?cinza:equipamento.getAc(10) == 1 ? verde:vermelho);
+                
+                sw1.setText(equipamento.getAc(1) == 2?"DESABILITADA":"HABILITADA");
+                sw1.setSelected(equipamento.getAc(1) != 2);
+                nome1.setText(equipamento.getAc_nome(1));
+                
+                
+                
+                sw2.setText(equipamento.getAc(2) == 2?"DESABILITADA":"HABILITADA");
+                sw2.setSelected(equipamento.getAc(2) != 2);
+                nome2.setText(equipamento.getAc_nome(2));
+                
+                sw3.setText(equipamento.getAc(3) == 2?"DESABILITADA":"HABILITADA");
+                sw3.setSelected(equipamento.getAc(3) != 2);
+                nome3.setText(equipamento.getAc_nome(3));
+                
+                sw4.setText(equipamento.getAc(4) == 2?"DESABILITADA":"HABILITADA");
+                sw4.setSelected(equipamento.getAc(4) != 2);
+                nome4.setText(equipamento.getAc_nome(4));
+                
+                sw5.setText(equipamento.getAc(5) == 2?"DESABILITADA":"HABILITADA");
+                sw5.setSelected(equipamento.getAc(5) != 2);
+                nome5.setText(equipamento.getAc_nome(5));
+                
+                sw6.setText(equipamento.getAc(6) == 2?"DESABILITADA":"HABILITADA");
+                sw6.setSelected(equipamento.getAc(6) != 2);
+                nome6.setText(equipamento.getAc_nome(6));
+                
+                sw7.setText(equipamento.getAc(7) == 2?"DESABILITADA":"HABILITADA");
+                sw7.setSelected(equipamento.getAc(7) != 2);
+                nome7.setText(equipamento.getAc_nome(7));
+                
+                sw8.setText(equipamento.getAc(8) == 2?"DESABILITADA":"HABILITADA");
+                sw8.setSelected(equipamento.getAc(8) != 2);
+                nome8.setText(equipamento.getAc_nome(8));
+                
+                sw9.setText(equipamento.getAc(9) == 2?"DESABILITADA":"HABILITADA");
+                sw9.setSelected(equipamento.getAc(9) != 2);
+                nome9.setText(equipamento.getAc_nome(9));
+                
+                sw10.setText(equipamento.getAc(10) == 2?"DESABILITADA":"HABILITADA");
+                sw10.setSelected(equipamento.getAc(10) != 2);
+                nome10.setText(equipamento.getAc_nome(10));
+                
+                uptimeField.setText(equipamento.getUptime());
+                tempfield.setText(equipamento.getTemp()+ " ºC");
+                
+                dataHoraField.setText(equipamento.getDate()+" - "+equipamento.getTime());
+                try {
+                    Thread.sleep(2000);
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                  
             }
         }).start();
     }
@@ -993,7 +895,8 @@ FiltroSmartWeb equipamento;
     
     private void controlTomada(int tomada, int op){
         
-        equipamento.controlTomada(tomada, op, null);
+       int resp = equipamento.controlTomada(tomada, op, null);
+       System.out.println("Resposta: "+resp);
         
         
         
@@ -1031,10 +934,9 @@ FiltroSmartWeb equipamento;
         //</editor-fold>
 
         /* Create and display the form */
-        java.awt.EventQueue.invokeLater(new Runnable() {
-            public void run() {
+        java.awt.EventQueue.invokeLater(()-> {
                 new Main().setVisible(true);
-            }
+            
         });
     }
 

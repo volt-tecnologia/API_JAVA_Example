@@ -1,28 +1,47 @@
 package br.volt.filtrosmartweb.model;
 
-import br.volt.filtrosmartweb.control.HTTPRequest;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.SocketTimeoutException;
-import java.net.URL;
+import br.volt.filtrosmartweb.control.HTTPVolt;
+
+import java.io.UnsupportedEncodingException;
+
 import java.net.URLEncoder;
-import java.util.Base64;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
 import javax.swing.JOptionPane;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.HashMap;
+import java.util.Map;
 
-public class FiltroSmartWeb extends VoltDevice{
+
+public class FiltroSmartWeb{
 
 
-    private String nportas="";
+    private int nportas=0;
     private int temp = 0;
+
+    protected String  user="",
+             pass="";
+
+    protected String url = "127.0.0.1";
+    protected String modelo = "";
+
+    //Version info
+    private String ver_har="Versão Hardware: N/A";
+    private String ver_OS="Versão Volt OS: N/A";
+    private String ver_MCU="Versão MCU: N/A";
+    private String ver_Web="Versão WebPage: N/A ";
+
+
+    ///ethernet info
+    private String  devdhcp="",
+            devip = "",
+            devmac = "",
+            devhost = "",
+            devgtw = "",
+            devmask = "",
+            devdns1 = "",
+            devdns2 = "";
     
     
     //Status das portas
@@ -61,11 +80,11 @@ public class FiltroSmartWeb extends VoltDevice{
             nresetr9="0",
             nresetr10="0";
 
-    String wdtint="0",
-            wdtms="0",
-            wdtrearme="0",
-            wdtmaxrearme="0",
-            wdtip1 = "0.0.0.0",
+    int     wdtint=0,
+            wdtms=0,
+            wdtrearme=0,
+            wdtmaxrearme=0;
+    String  wdtip1 = "0.0.0.0",
             wdtip2 = "0.0.0.0",
             wdtip3 = "0.0.0.0",
             wdtip4 = "0.0.0.0",
@@ -149,13 +168,28 @@ public class FiltroSmartWeb extends VoltDevice{
     
     
     public FiltroSmartWeb(String user, String pass, String url, String devmac, String modelo, String devhost) {
-        super(user, pass, url, devmac, modelo, devhost);
+        this.user = user;
+        this.pass = pass;
+        this.url = url;
+        this.devmac = devmac;
+        this.modelo = modelo;
+        this.devhost = devhost;
+        
     }
     public FiltroSmartWeb(String user, String pass, String url){
         this.user = user;
         this.pass = pass;
         this.url = url;
 
+    }
+    public FiltroSmartWeb(Boolean dhcp, String devhost, String devip, String devgtw, String devmask, String devdns1, String devdns2){
+        this.devhost= devhost;
+        this.devip = devip;
+        this.devgtw = devgtw;
+        this.devmask = devmask;
+        this.devdns1 = devdns1;
+        this.devdns2 = devdns2;
+        
     }
     
     /***
@@ -166,16 +200,19 @@ public class FiltroSmartWeb extends VoltDevice{
                     String resp[] = new String[2];
                     resp[0] = "0";
                     JSONObject jo = null;
-                    resp = HTTPRequest.reqGETHTTP("http://"+this.getUrl()+"/status.json", this.getUser(), this.getPass(), 2000);
+                    resp = HTTPVolt.reqGETHTTP("http://"+this.getUrl()+"/status.json", this.getUser(), this.getPass(), 2000);
                     //System.out.println(resp[0]);
-                    try{
-                        jo = new JSONObject(resp[1]);
-                        this.setParams(jo);
-                    }catch(JSONException e){
-                        System.out.println("Erro ao adquirir info do equipamento: "+e.getMessage());
-                        e.printStackTrace();
+                    if(resp[0].equals("200"))
+                    {
+                        try{
+                            jo = new JSONObject(resp[1]);
+                            this.setParams(jo);
+                        }catch(JSONException e){
+                            System.out.println("Erro ao adquirir info do equipamento: "+e.getMessage());
+                            resp[0] = "500";
+                            e.printStackTrace();
+                        }
                     }
-                    
                     
                     return Integer.parseInt(resp[0]);
     }
@@ -186,28 +223,47 @@ public class FiltroSmartWeb extends VoltDevice{
      * @param tomada - 1~10 Tomada a ser controlada/alterada
      * @param op - 0:desliga/liga tomada; 1: habilita/desabilita tomada; 2 - Altera nome da tomada
      * @param ac_name - Novo nome para a tomada(op 2) ou null (op 0 e 1)
+     * @return int
      */
-    public void controlTomada(int tomada, int op, String ac_name){
-        
+    public int controlTomada(int tomada, int op, String ac_name){
+        String[] resp = new String[2];
         switch(op){
             case 0:
                 if(this.getAc(tomada) != 2){
-                    String[] resp = HTTPRequest.reqGETHTTP("http://" + this.getUrl() + "/outpoe.cgi?poe=" + tomada + "&sts="+(this.getAc(tomada) == 1 ? '0':'1')+"&pr=0", this.getUser(), this.getPass(), 1000);
-                        System.out.println("http://" + this.getUrl() + "/outpoe.cgi?poe=" + tomada + "&sts="+(this.getAc(tomada) == 1 ? '0':'1')+"&pr=0");
+                    resp = HTTPVolt.reqGETHTTP("http://" + this.getUrl() + "/outpoe.cgi?poe=" + tomada + "&sts="+(this.getAc(tomada) == 1 ? '0':'1')+"&pr=0", this.getUser(), this.getPass(), 1000);
+                    System.out.println(resp[0]);
+                    System.out.println(resp[1]);
                 }
-                else JOptionPane.showMessageDialog(null, "Porta desabilitada!!");
+                else {
+                    JOptionPane.showMessageDialog(null, "Porta desabilitada!!");
+                    resp[0]="0";
+                }
                 break;
                case 1:
-                   String nomePorta = this.getAc_nome(tomada);
                    
-                    HTTPRequest.reqGETHTTP("http://" + this.getUrl() + "/output.htm?porta=" + tomada + "&rmac=" + (this.getAc(tomada) == 2 ? "true" : "false") + "&nt=" + nomePorta, this.getUser(), this.getPass(), 1000);
-            
+                    String nomePorta = this.getAc_nome(tomada);
+                    try{
+                           nomePorta = URLEncoder.encode(nomePorta, "UTF-8");
+                        }catch(UnsupportedEncodingException ex){
+                            ex.printStackTrace();
+                        }
+                    resp = HTTPVolt.reqGETHTTP("http://" + this.getUrl() + "/output.htm?porta=" + tomada + "&rmac=" + (this.getAc(tomada) == 2 ? "true" : "false") + "&nt=" + nomePorta, this.getUser(), this.getPass(), 1000);
+                    System.out.println(resp[0]);
+                    System.out.println(resp[1]);
                 break;
                 
                case 2:
-                   if(ac_name != null)                   
-                    HTTPRequest.reqGETHTTP("http://" + this.getUrl() + "/output.htm?porta=" + tomada + "&rmac=" + (this.getAc(tomada) == 2 ? "false" : "true") + "&nt=" + ac_name, this.getUser(), this.getPass(), 1000);
-                   else JOptionPane.showMessageDialog(null, "Digite um nome válido para a tomada!!");
+                   if(ac_name != null)
+                   {
+                        try{
+                           ac_name = URLEncoder.encode(ac_name, "UTF-8");
+                        }catch(UnsupportedEncodingException ex){
+                            ex.printStackTrace();
+                        }
+                        resp = HTTPVolt.reqGETHTTP("http://" + this.getUrl() + "/output.htm?porta=" + tomada + "&rmac=" + (this.getAc(tomada) == 2 ? "false" : "true") + "&nt=" + ac_name, this.getUser(), this.getPass(), 1000);
+                        System.out.println(resp[0]);
+                        System.out.println(resp[1]);
+                   }else JOptionPane.showMessageDialog(null, "Digite um nome válido para a tomada!!");
                    break;
                    
         }
@@ -215,83 +271,53 @@ public class FiltroSmartWeb extends VoltDevice{
         
         
         
-
+        return Integer.parseInt(resp[0]);
         
     }
     
     
     /***
      * Realiza a atualização dos parâmetros de rede do equipamento através de uma requisição HTTP POST
-     * @param vd
+     * @param booldhcp
+     * @param newhost
+     * @param newip
+     * @param newgtw
+     * @param newdns1
+     * @param newmask
+     * @param newdns2
      * @return - boolean: true = sucesso / false = falha
      */
-    public boolean configEthernet(VoltDevice vd)
-    {
-        String request="dhcp="+(vd.getDevdhcp())+"&mac="+URLEncoder.encode("11:22:33:44:55:66")+"&host="+URLEncoder.encode(vd.getDevhost())+
-                    "&ip="+vd.getDevip()+"&gw="+vd.getDevgtw()+"&sub="+vd.getDevmask()+"&dns1="+vd.getDevdns1()+
-                    "&dns2="+vd.getDevdns2();
+    
+    public int configEthernet(Boolean booldhcp, String newhost, String newip, String newgtw, String newmask, String newdns1, String newdns2){
         
-        try {
-            URL url = new URL("http://"+this.devip+"/config.htm?");
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("POST");
-            conn.setConnectTimeout(1000);
-            conn.setReadTimeout(1000);
-            conn.setRequestProperty("Authorization", "Basic " + Base64.getEncoder().encodeToString((user+":"+pass).getBytes()));
-            conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-            conn.setDoOutput(true);
-            System.out.println(conn.getURL().toString()+request);
-            OutputStreamWriter writer = new OutputStreamWriter(conn.getOutputStream(),"UTF-8");
-
-            writer.write(request);//Envia as informações de rede para o equipamento
-            writer.flush();
-            writer.close();
-
-
-
-            try{//É necessário receber a página retornada pelo equipamento "reboot.htm", porém a mesma não autoriza o acesso. Então, sabendo do retorno HTTP 401, deixo entrar em erro e passar direto
-                String response="";
-                BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream(),"UTF-8"));
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    response+=line;
-                }
-
-                System.out.println(new String(response.getBytes(),"UTF8"));
-                reader.close();
-            }catch(IOException ex){
-                System.out.println("TRY 2");
-            }
-
-            //Como a página reboot.htm, retornada pelo equipamento não foi tratada e o AJAX, contido na mesma, não foi executado eu chamo diretamente o script de reboot "reboot.cgi"
-            conn = (HttpURLConnection) new URL("http://"+this.devip+"/reset.cgi?timeout=1").openConnection();
-            conn.setReadTimeout(1000);//quando o script for executado, a conexão será perdida. Timeout para o software não ficar preso esperando resposta
-            conn.setRequestProperty("Authorization", "Basic " + Base64.getEncoder().encodeToString((user+":"+pass).getBytes()));
-            try{
-                conn.getResponseCode();//preciso realizar essa leitura
-            }catch(SocketTimeoutException ex){
-                System.out.println("TRY 3");
-            }
-            
-            this.devip = vd.getDevip();
-            return true;
-
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-            System.out.println("TRY 1");
-        } catch (IOException e) {
-            System.out.println("TRY 4");
-            e.printStackTrace();
-        }
+        Map<Object,Object> form = new HashMap<>();
+        form.put("dhcp", (booldhcp == null ? this.getDevdhcp()?"true":"false":booldhcp?"true":"false"));
+        form.put("mac", this.getDevmac());
+        form.put("host", newhost == null ? this.getDevhost():newhost);
+        form.put("ip", newip == null ? this.devip:newip);
+        form.put("gw", newgtw == null ? this.getDevgtw():newgtw);
+        form.put("sub", newmask == null ? this.getDevmask():newmask);
+        form.put("dns1", newdns1 == null ? this.getDevdns1():newdns1);
+        form.put("dns2", newdns2 == null ? this.getDevdns2():newdns2);
         
-        return false;
+        String[] resp = HTTPVolt.reqPostForm("http://"+this.devip+"/config.htm?", user, pass, form);
+        //System.out.println("config: "+resp[0]);
+        if(!resp[0].equals("500") && !resp[0].equals("401") && !resp[0].equals("400")) resp = HTTPVolt.reqGETHTTP("http://"+this.devip+"/reset.cgi?timeout=1", user, pass, 2000);
         
+        //System.out.println("reboot: "+resp[1]);
+        
+        // print response headers
+       
 
+      return Integer.parseInt(resp[0]);  
+        
     }
+    
+    
     
     public boolean setParams(JSONObject jo){
         try{
-            setNportas(jo.getString("nportas"));
+            setNportas(Integer.parseInt(jo.getString("nportas")));
             setTemp(Integer.parseInt(jo.getString("temp")));
             
             setAc(1, jo.getString("rmac1").equals("true") ? jo.getString("ac0").equals("0") ? 1 : 0 : 2);
@@ -324,10 +350,10 @@ public class FiltroSmartWeb extends VoltDevice{
             setVer_OS("Versão de OS: "+jo.getString("veros"));
             
             setWdten(jo.get("wdten").equals("true"));
-            setWdtint(jo.getString("wdtint"));
-            setWdtms(jo.getString("wdtms"));
-            setWdtrearme(jo.getString("wdtrearme"));
-            setWdtmaxrearme(jo.getString("wdtmaxrearme"));
+            setWdtint(Integer.parseInt(jo.getString("wdtint")));
+            setWdtms(Integer.parseInt(jo.getString("wdtms")));
+            setWdtrearme(Integer.parseInt(jo.getString("wdtrearme")));
+            setWdtmaxrearme(Integer.parseInt(jo.getString("wdtmaxrearme")));
             setCntping(jo.getString("cntping"));
             setVarredura(jo.getString("varredura").equals("0")?"PAUSA":"EXCUTANDO..");
             setRmatual(jo.getString("rmatual"));
@@ -361,7 +387,7 @@ public class FiltroSmartWeb extends VoltDevice{
             setDevhost(jo.getString("devhost"));
             setDevdns1(jo.getString("devdns1"));
             setDevdns2(jo.getString("devdns2"));
-            setDevdhcp(jo.getString("devdhcp"));
+            setDevdhcp(jo.getString("devdhcp").equals(true));
             
             setWdtcheck(1,jo.getString("wdtcheck1").equals("true"));
             setWdtip(1,jo.getString("wdtip1"));
@@ -384,19 +410,19 @@ public class FiltroSmartWeb extends VoltDevice{
             setWdtcheck(10,jo.getString("wdtcheck10").equals("true"));
             setWdtip(10,jo.getString("wdtip10"));
             
-             for(int i = 0; i < (Integer.parseInt(getNportas())); i++){
+             for(int i = 0; i < (getNportas()); i++){
                 setEnTimer(i+1, jo.getString(("entimer"+(i+1))).equals("true"));
             }
 
-            for(int i = 0; i < (Integer.parseInt(getNportas())); i++){
+            for(int i = 0; i < (getNportas()); i++){
                 setL_on(i+1,jo.getString(("l_on"+(i+1))));
             }
 
-            for(int i = 0; i < (Integer.parseInt(getNportas())); i++){
+            for(int i = 0; i < (getNportas()); i++){
                 setAl_off(i+1,jo.getString(("al_off"+(i+1))));
             }
 
-            for(int i = 0; i < (Integer.parseInt(getNportas())); i++){
+            for(int i = 0; i < (getNportas()); i++){
                 setDias(i+1, jo.getString(("dias"+(i+1))));
             }
         }catch(JSONException e){
@@ -409,11 +435,11 @@ public class FiltroSmartWeb extends VoltDevice{
         return true;
     }
 
-    public String getNportas() {
+    public int getNportas() {
         return nportas;
     }
 
-    public void setNportas(String nportas) {
+    public void setNportas(int nportas) {
         this.nportas = nportas;
     }
     
@@ -427,35 +453,35 @@ public class FiltroSmartWeb extends VoltDevice{
     }
    
 
-    public String getWdtint() {
+    public int getWdtint() {
         return wdtint;
     }
 
-    public void setWdtint(String wdtint) {
+    public void setWdtint(int wdtint) {
         this.wdtint = wdtint;
     }
 
-    public String getWdtms() {
+    public int getWdtms() {
         return wdtms;
     }
 
-    public void setWdtms(String wdtms) {
+    public void setWdtms(int wdtms) {
         this.wdtms = wdtms;
     }
 
-    public String getWdtrearme() {
+    public int getWdtrearme() {
         return wdtrearme;
     }
 
-    public void setWdtrearme(String wdtrearme) {
+    public void setWdtrearme(int wdtrearme) {
         this.wdtrearme = wdtrearme;
     }
 
-    public String getWdtmaxrearme() {
+    public int getWdtmaxrearme() {
         return wdtmaxrearme;
     }
 
-    public void setWdtmaxrearme(String wdtmaxrearme) {
+    public void setWdtmaxrearme(int wdtmaxrearme) {
         this.wdtmaxrearme = wdtmaxrearme;
     }
 
@@ -1467,6 +1493,110 @@ public class FiltroSmartWeb extends VoltDevice{
 
     }
     
+    /////
+
+    public String getModelo() {
+        return modelo;
+    }
+
+    public void setModelo(String modelo) {
+        this.modelo = modelo;
+    }
+
+    public Boolean getDevdhcp() {
+        return devdhcp.equals(true);
+    }
+
+    public void setDevdhcp(boolean devdhcp) {
+        this.devdhcp = devdhcp?"true":"false";
+    }
+
+    public String getDevip() {
+        return devip;
+    }
+
+    public void setDevip(String devip) {
+        this.devip = devip;
+    }
+
+    public String getDevmac() {
+        return devmac;
+    }
+
+    public void setDevmac(String devmac) {
+        this.devmac = devmac;
+    }
+
+    public String getDevhost() {
+        return devhost;
+    }
+
+    public void setDevhost(String devhost) {
+        this.devhost = devhost;
+    }
+
+    public String getDevgtw() {
+        return devgtw;
+    }
+
+    public void setDevgtw(String devgtw) {
+        this.devgtw = devgtw;
+    }
+
+    public String getDevmask() {
+        return devmask;
+    }
+
+    public void setDevmask(String devmask) {
+        this.devmask = devmask;
+    }
+
+    public String getDevdns1() {
+        return devdns1;
+    }
+
+    public void setDevdns1(String devdns1) {
+        this.devdns1 = devdns1;
+    }
+
+    public String getDevdns2() {
+        return devdns2;
+    }
+
+    public void setDevdns2(String devdns2) {
+        this.devdns2 = devdns2;
+    }
+    public String getVer_har() {
+        return ver_har;
+    }
+
+    public void setVer_har(String ver_har) {
+        this.ver_har = ver_har;
+    }
+
+    public String getVer_OS() {
+        return ver_OS;
+    }
+
+    public void setVer_OS(String ver_OS) {
+        this.ver_OS = ver_OS;
+    }
+
+    public String getVer_MCU() {
+        return ver_MCU;
+    }
+
+    public void setVer_MCU(String ver_MCU) {
+        this.ver_MCU = ver_MCU;
+    }
+
+    public String getVer_Web() {
+        return ver_Web;
+    }
+
+    public void setVer_Web(String ver_Web) {
+        this.ver_Web = ver_Web;
+    }
    
    /*
     
